@@ -2,13 +2,15 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class MovieQuery {
-    public static void queryAll(String inFileName, String outFileName) {
+       public static void queryAll(String inFileName, String outFileName) {
         List<String> rawData;
         try{
             Path path = Paths.get(inFileName);
@@ -28,24 +30,31 @@ public class MovieQuery {
     }
 
     public static void query1(List<String[]> collection, String outFileName){
-        PrintWriter outputFile =  QueryOutputWriter.processOutput(outFileName, MovieQuery::outputQuery);
+        PrintWriter outputFile_1 =  QueryOutputWriter.processOutput(outFileName, MovieQuery::outputQuery);
         StreamProcessor.applyLambdaToStream(collection.stream(), MovieQuery::fetchTitles)
-                    .forEach(outputFile::println);
+                    .forEach(outputFile_1::println);
+        outputFile_1.close();
     }
     public static void query2(List<String[]> collection, String outFileName){
-        PrintWriter outputFile =  QueryOutputWriter.processOutput(outFileName, MovieQuery::outputQuery);
+        PrintWriter outputFile_2 =  QueryOutputWriter.processOutput(outFileName, MovieQuery::outputQuery);
         StreamProcessor.applyLambdaToStream(collection.stream(), MovieQuery::fetchDirectorsWithRatings)
-                    .forEach(outputFile::println);
+                .forEach(outputFile_2::println);
+        outputFile_2.close();
     }
     public static void query3(List<String[]> collection, String outFileName){
-        PrintWriter outputFile =  QueryOutputWriter.processOutput(outFileName, MovieQuery::outputQuery);
-        StreamProcessor.applyLambdaToStream(collection.stream(), MovieQuery::adventureWithLeastRevenue)
-                .forEach(outputFile::println);
+        PrintWriter outputFile_3 =  QueryOutputWriter.processOutput(outFileName, MovieQuery::outputQuery);
+        StreamProcessor.applyLambdaToStream(collection.stream(), MovieQuery::fetchAdventureWithLeastRevenue)
+                .forEach(outputFile_3::println);
+        outputFile_3.close();
     }
-    public static Stream<String> adventureWithLeastRevenue(Stream<String[]> stream) {
-        return stream.map( arr -> MovieQuery.indexStreamArray(arr, 0))
-                .map(String::toUpperCase)
-                .sorted();
+    public static Stream<String> fetchAdventureWithLeastRevenue(Stream<String[]> stream) {
+        return stream.filter(arr -> (MovieQuery.indexStreamArray(arr, 2).contains("Adventure") &&
+                        !Objects.equals(MovieQuery.indexStreamArray(arr, 8), "-1")))
+                .distinct()
+                .sorted(Comparator.comparingDouble(MovieQuery::getGross))
+                .findFirst().stream()
+                .map(arr -> MovieQuery.indexStreamArray(arr, 6))
+                .map(String::toUpperCase);
     }
     public static Stream<String> fetchTitles(Stream<String[]> stream) {
         return stream.map( arr -> MovieQuery.indexStreamArray(arr, 0))
@@ -62,8 +71,8 @@ public class MovieQuery {
                 .sorted();
     }
     public static PrintWriter outputQuery(String outFileName){
-        // try-resource here :)
-        try(PrintWriter outputFile = new PrintWriter(Files.newBufferedWriter(Paths.get(outFileName)))) {
+        try{
+            PrintWriter outputFile = new PrintWriter(Files.newBufferedWriter(Paths.get(outFileName)), true);
             return outputFile;
         }
         catch(Exception e){
@@ -73,6 +82,9 @@ public class MovieQuery {
     }
     public static String indexStreamArray(String[] arr, int index){
         return arr[index];
+    }
+    public static double getGross(String[] arr){
+       return Double.parseDouble(arr[8]);
     }
 }
 

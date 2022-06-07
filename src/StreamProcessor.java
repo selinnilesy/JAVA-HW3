@@ -1,5 +1,7 @@
+import java.util.List;
 import java.util.stream.Stream;
 
+@FunctionalInterface
 public interface StreamProcessor {
     Stream<String> processStream(Stream<String[]> strings);
 
