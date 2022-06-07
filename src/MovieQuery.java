@@ -27,48 +27,62 @@ public class MovieQuery {
         query1(preparedData, outFileName+"-1.out");
         query2(preparedData, outFileName+"-2.out");
         query3(preparedData, outFileName+"-3.out");
+        query4(preparedData, outFileName+"-4.out");
     }
 
     public static void query1(List<String[]> collection, String outFileName){
         PrintWriter outputFile_1 =  QueryOutputWriter.processOutput(outFileName, MovieQuery::outputQuery);
-        StreamProcessor.applyLambdaToStream(collection.stream(), MovieQuery::fetchTitles)
-                    .forEach(outputFile_1::println);
+        formatStreamForOutput(
+                StreamProcessor.applyLambdaToStream(collection.stream(), MovieQuery::fetchTitles)
+            ).forEach(outputFile_1::println);
         outputFile_1.close();
     }
     public static void query2(List<String[]> collection, String outFileName){
         PrintWriter outputFile_2 =  QueryOutputWriter.processOutput(outFileName, MovieQuery::outputQuery);
-        StreamProcessor.applyLambdaToStream(collection.stream(), MovieQuery::fetchDirectorsWithRatings)
-                .forEach(outputFile_2::println);
+        formatStreamForOutput(
+                StreamProcessor.applyLambdaToStream(collection.stream(), MovieQuery::fetchDirectorsWithHighRatings)
+            ).forEach(outputFile_2::println);
         outputFile_2.close();
     }
     public static void query3(List<String[]> collection, String outFileName){
         PrintWriter outputFile_3 =  QueryOutputWriter.processOutput(outFileName, MovieQuery::outputQuery);
-        StreamProcessor.applyLambdaToStream(collection.stream(), MovieQuery::fetchAdventureWithLeastRevenue)
-                .forEach(outputFile_3::println);
+        formatStreamForOutput(
+                StreamProcessor.applyLambdaToStream(collection.stream(), MovieQuery::fetchAdventureWithLeastRevenue)
+            ).forEach(outputFile_3::println);
         outputFile_3.close();
     }
+    public static void query4(List<String[]> collection, String outFileName){
+        PrintWriter outputFile_4 =  QueryOutputWriter.processOutput(outFileName, MovieQuery::outputQuery);
+
+        List<String> succesfull_ones = StreamProcessor.applyLambdaToStream(collection.stream(), MovieQuery::fetchDirectorsWithHighRatings).collect(Collectors.toList());
+        List<String> failed_ones =StreamProcessor.applyLambdaToStream(collection.stream(), MovieQuery::fetchDirectorsWithLowRatings).collect(Collectors.toList());
+
+        formatStreamForOutput(succesfull_ones.stream().
+                                            filter(failed_ones::contains))
+                .forEach(outputFile_4::println);
+        outputFile_4.close();
+    }
     public static Stream<String> fetchAdventureWithLeastRevenue(Stream<String[]> stream) {
-        return stream.filter(arr -> (MovieQuery.indexStreamArray(arr, 2).contains("Adventure") &&
-                        !Objects.equals(MovieQuery.indexStreamArray(arr, 8), "-1")))
+        return stream.filter(arr -> (arr[2].contains("Adventure") &&
+                        !Objects.equals(arr[8], "-1")))
                 .distinct()
                 .sorted(Comparator.comparingDouble(MovieQuery::getGross))
                 .findFirst().stream()
-                .map(arr -> MovieQuery.indexStreamArray(arr, 6))
-                .map(String::toUpperCase);
+                .map(arr -> arr[6]);
     }
     public static Stream<String> fetchTitles(Stream<String[]> stream) {
-        return stream.map( arr -> MovieQuery.indexStreamArray(arr, 0))
-                    .map(String::toUpperCase)
-                    .sorted();
+        return stream.map( arr -> arr[0]);
     }
-    public static Stream<String> fetchDirectorsWithRatings(Stream<String[]> stream) {
-        return stream
-                .filter(x-> Double.valueOf(x[4]) >= 8.5
+    public static Stream<String> fetchDirectorsWithHighRatings(Stream<String[]> stream) {
+        return stream.filter(x-> Double.valueOf(x[4]) >= 8.5
                 )
-                .map( arr -> MovieQuery.indexStreamArray(arr, 6))
-                .distinct()
-                .map(String::toUpperCase)
-                .sorted();
+                .map( arr -> arr[6])
+                .distinct();
+    }
+    public static Stream<String> fetchDirectorsWithLowRatings(Stream<String[]> stream) {
+        return stream.filter(x-> Double.valueOf(x[4]) <= 8.0)
+                .map( arr -> arr[6])
+                .distinct();
     }
     public static PrintWriter outputQuery(String outFileName){
         try{
@@ -80,11 +94,12 @@ public class MovieQuery {
             return null;
         }
     }
-    public static String indexStreamArray(String[] arr, int index){
-        return arr[index];
-    }
     public static double getGross(String[] arr){
        return Double.parseDouble(arr[8]);
+    }
+    public static Stream<String> formatStreamForOutput(Stream<String> stream){
+        return stream.map(String::toUpperCase)
+                .sorted();
     }
 }
 
