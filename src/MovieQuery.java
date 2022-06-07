@@ -18,9 +18,8 @@ public class MovieQuery {
             return;
         }
         System.out.println(rawData);
-        // get rid of headers when it is a collection :
-        // Title,Year,Genre,RunTime,Rating,Votes,Director,Cast,Gross
-        // also consider each line as stream<String[]> in queries.
+        // get rid of headers as it is still a collection : Title,Year,Genre,RunTime,Rating,Votes,Director,Cast,Gross
+        // also transform each line into array for queries to use stream<String[]>.
         rawData.remove(0);
         List<String[]> preparedData = rawData.stream().map(line -> line.split(",")).collect(Collectors.toList());
         query1(preparedData, outFileName+"-1.out");
@@ -44,18 +43,12 @@ public class MovieQuery {
                 .forEach(outputFile::println);
     }
     public static Stream<String> adventureWithLeastRevenue(Stream<String[]> stream) {
-        return stream.map(arr -> {
-                    String first = arr[0];
-                    return first;
-                })
+        return stream.map( arr -> MovieQuery.indexStreamArray(arr, 0))
                 .map(String::toUpperCase)
                 .sorted();
     }
     public static Stream<String> fetchTitles(Stream<String[]> stream) {
-        return stream.map(arr -> {
-                        String first = arr[0];
-                        return first;
-                    })
+        return stream.map( arr -> MovieQuery.indexStreamArray(arr, 0))
                     .map(String::toUpperCase)
                     .sorted();
     }
@@ -63,10 +56,7 @@ public class MovieQuery {
         return stream
                 .filter(x-> Double.valueOf(x[4]) >= 8.5
                 )
-                .map(arr -> {
-                    String first = arr[6];
-                    return first;
-                })
+                .map( arr -> MovieQuery.indexStreamArray(arr, 6))
                 .distinct()
                 .map(String::toUpperCase)
                 .sorted();
@@ -80,6 +70,9 @@ public class MovieQuery {
             System.out.println(e);
             return null;
         }
+    }
+    public static String indexStreamArray(String[] arr, int index){
+        return arr[index];
     }
 }
 
